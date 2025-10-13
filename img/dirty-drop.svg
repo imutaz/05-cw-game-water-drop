@@ -1,0 +1,16 @@
+<svg width="22" height="30" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="dirtyWater" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#8d6e63;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#6d4c41;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4e342e;stop-opacity:1" />
+    </radialGradient>
+    <filter id="dirtyShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <path d="M11 2 C6 8, 2 12, 2 18 C2 24, 6 28, 11 28 C16 28, 20 24, 20 18 C20 12, 16 8, 11 2 Z" fill="url(#dirtyWater)" filter="url(#dirtyShadow)"/>
+  <circle cx="7" cy="15" r="1.5" fill="#5d4037" opacity="0.8"/>
+  <circle cx="14" cy="12" r="1" fill="#3e2723" opacity="0.6"/>
+  <circle cx="9" cy="20" r="0.8" fill="#8d6e63" opacity="0.7"/>
+</svg>

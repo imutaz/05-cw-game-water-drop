@@ -1,0 +1,23 @@
+<svg width="120" height="50" xmlns="http://www.w3.org/2000/svg">
+<svg width="140" height="60" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="waterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd100;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffb300;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect x="0" y="0" width="140" height="60" rx="8" fill="#ffffff" opacity="0"/>
+  
+  <!-- Water drop icon -->
+  <circle cx="30" cy="30" r="18" fill="url(#waterGrad)" stroke="#ff9800" stroke-width="2"/>
+  <path d="M30 15 C25 22, 18 26, 18 32 C18 39, 23 44, 30 44 C37 44, 42 39, 42 32 C42 26, 35 22, 30 15 Z" fill="#ffffff"/>
+  <ellipse cx="26" cy="28" rx="3" ry="5" fill="#ffb300" opacity="0.6"/>
+  
+  <!-- Text -->
+  <text x="55" y="22" font-size="14" font-family="Arial, sans-serif" font-weight="bold" fill="#333333">charity:</text>
+  <text x="55" y="40" font-size="14" font-family="Arial, sans-serif" font-weight="bold" fill="#ffd100">water</text>
+  
+  <!-- Tagline -->
+  <text x="55" y="52" font-size="8" font-family="Arial, sans-serif" fill="#666666">bringing clean water to everyone</text>
+</svg>

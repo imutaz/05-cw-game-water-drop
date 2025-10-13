@@ -1,25 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Water Drop Game</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tube Clean: Water Rescue</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <div class="game-wrapper">
-        <h1 class="game-title">Water Drop</h1>
-        <p class="game-tagline">Catch the good drops, avoid the bad ones!</p>
-        <div class="score-panel">
-            <div class="score">Score: <span id="score">0</span></div>
-            <div class="timer">Time: <span id="time">30</span>s</div>
-            <button id="start-btn">Start Game</button>
+  <!-- Start Screen -->
+  <div id="startScreen" class="screen">
+    <div class="game-container">
+      <header>
+        <a href="https://www.charitywater.org/" target="_blank" rel="noopener noreferrer">
+          <img src="img/charity-water-logo.svg" alt="charity: water logo" class="main-logo" onerror="if(!this.dataset.fallback){this.dataset.fallback=1;this.src='img/cw_logo-horizontal.png';}else{this.src='img/cw_logo.png';}" />
+        </a>
+        <h1 class="title">Tube Clean: Water Rescue</h1>
+        <p class="subtitle">Help filter dirty water into clean water!</p>
+      </header>
+      <main>
+        <div class="start-controls">
+          <input type="text" id="playerName" class="input" placeholder="Enter your name" maxlength="20" />
+          <button id="startBtn" class="main-button">START</button>
         </div>
-        
-        <div id="game-container">
-        </div>
+      </main>
     </div>
-    
-    <script src="script.js"></script>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="gameScreen" class="screen hidden">
+    <div class="game-container">
+      <header class="game-header">
+        <div class="score-box">
+          <h3>PURITY</h3>
+          <span id="purityScore">0%</span>
+        </div>
+        <div class="phase-indicator">
+          <span id="currentPhase">Click the dirty tub!</span>
+        </div>
+      </header>
+
+      <main class="game-area">
+        <!-- Scoop Phase -->
+        <div id="scoopPhase" class="phase-container">
+          <img src="img/dirty-tub.svg" alt="dirty tub" id="dirtyTub" class="clickable" />
+          <img src="img/cup.svg" alt="cup" id="cup" class="hidden" />
+        </div>
+
+        <!-- Pour Phase -->
+        <div id="pourPhase" class="phase-container hidden">
+          <img src="img/cup.svg" alt="cup with dirty water" id="filledCup" class="clickable" />
+          <img src="img/tube.svg" alt="filter tube" id="filterTube" />
+        </div>
+
+        <!-- Filter Phase -->
+        <div id="filterPhase" class="phase-container hidden">
+          <div class="game-board">
+            <!-- Top section: Filter tube -->
+            <div class="filter-section">
+              <div class="tube-with-water">
+                <svg width="80" height="160" xmlns="http://www.w3.org/2000/svg" id="activeTubeSVG">
+                  <defs>
+                    <linearGradient id="tubeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.9" />
+                      <stop offset="50%" style="stop-color:#e1f5fe;stop-opacity:0.4" />
+                      <stop offset="100%" style="stop-color:#b3e5fc;stop-opacity:0.2" />
+                    </linearGradient>
+                    <linearGradient id="dirtyWaterLevel" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style="stop-color:#8d6e63;stop-opacity:0.9" />
+                      <stop offset="30%" style="stop-color:#6d4c41;stop-opacity:1" />
+                      <stop offset="70%" style="stop-color:#5d4037;stop-opacity:1" />
+                      <stop offset="100%" style="stop-color:#4e342e;stop-opacity:1" />
+                    </linearGradient>
+                    <pattern id="filterPattern" patternUnits="userSpaceOnUse" width="4" height="4">
+                      <rect width="4" height="4" fill="#e0e0e0"/>
+                      <circle cx="2" cy="2" r="0.8" fill="#bdbdbd"/>
+                    </pattern>
+                    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-opacity="0.2"/>
+                    </filter>
+                  </defs>
+                  
+                  <!-- Outer tube casing -->
+                  <rect x="10" y="10" width="60" height="140" rx="8" fill="#37474f" stroke="#263238" stroke-width="2" filter="url(#shadow)"/>
+                  
+                  <!-- Inner transparent chamber -->
+                  <rect x="15" y="15" width="50" height="130" rx="5" fill="url(#tubeGrad)" stroke="#0277bd" stroke-width="2"/>
+                  
+                  <!-- Filter layer at bottom -->
+                  <rect x="17" y="120" width="46" height="8" fill="url(#filterPattern)" stroke="#9e9e9e" stroke-width="1"/>
+                  
+                  <!-- Dirty water level (controlled by JavaScript) -->
+                  <rect x="17" y="17" width="46" height="103" rx="3" fill="url(#dirtyWaterLevel)" id="waterLevel" opacity="0.8"/>
+                  
+                  <!-- Dirt particles in water -->
+                  <circle cx="30" cy="60" r="1.5" fill="#3e2723" opacity="0.6" class="water-particle" id="particle1"/>
+                  <circle cx="50" cy="80" r="1" fill="#5d4037" opacity="0.8" class="water-particle" id="particle2"/>
+                  <circle cx="35" cy="100" r="1.2" fill="#6d4c41" opacity="0.7" class="water-particle" id="particle3"/>
+                  <circle cx="45" cy="50" r="0.8" fill="#8d6e63" opacity="0.5" class="water-particle" id="particle4"/>
+                  <circle cx="25" cy="90" r="1" fill="#6d4c41" opacity="0.6" class="water-particle" id="particle5"/>
+                  
+                  <!-- Tube highlights -->
+                  <rect x="17" y="17" width="46" height="103" rx="3" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.3"/>
+                  
+                  <!-- Filter tube spout -->
+                  <rect x="35" y="145" width="10" height="8" fill="#37474f"/>
+                  <rect x="36" y="146" width="8" height="6" fill="#ffffff" opacity="0.3"/>
+                </svg>
+              </div>
+            </div>
+            
+            <!-- Middle section: Drop zone -->
+            <div class="drop-zone" id="dropZone">
+              <!-- Drops will appear here -->
+            </div>
+            
+            <!-- Bottom section: Bucket area -->
+            <div class="bucket-zone">
+              <div class="bucket-area">
+                <img src="img/bucket.svg" alt="bucket" id="cleanBucket" class="movable-bucket" />
+              </div>
+              <div class="bucket-instructions">Drag bucket left/right to catch drops!</div>
+            </div>
+          </div>
+          
+          <button id="squeezeBtn" class="squeeze-button">
+            <img src="img/hand-press.svg" alt="press" class="hand-icon" />
+            SQUEEZE
+          </button>
+        </div>
+
+        <!-- Purity Bar -->
+        <div class="purity-container">
+          <div class="purity-bar">
+            <div id="purityFill" class="purity-fill"></div>
+          </div>
+          <span class="purity-label">Water Purity: <span id="purityPercent">0%</span></span>
+        </div>
+      </main>
+
+      <footer>
+        <button id="resetBtn" class="small-button">RESET</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Results Screen -->
+  <div id="resultsScreen" class="screen hidden">
+    <div class="game-container">
+      <header>
+        <h1 class="results-title">Water Filtered!</h1>
+        <div class="final-score">
+          <h2>Total Purity: <span id="finalPurity">0%</span></h2>
+        </div>
+      </header>
+      <main>
+        <div class="results-message" id="resultsMessage">
+          Great job cleaning the water!
+        </div>
+        <div class="button-group">
+          <button id="retryBtn" class="main-button">TRY AGAIN</button>
+          <button id="shareBtn" class="secondary-button">SHARE</button>
+        </div>
+      </main>
+      <footer>
+        <a href="https://www.charitywater.org/" target="_blank" rel="noopener noreferrer">
+          <img src="img/charity-water-logo.svg" alt="charity: water logo" class="logo" onerror="if(!this.dataset.fallback){this.dataset.fallback=1;this.src='img/cw_logo-horizontal.png';}else{this.src='img/cw_logo.png';}" />
+        </a>
+      </footer>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
