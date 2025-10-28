@@ -9,8 +9,12 @@
       <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.3"/>
     </filter>
   </defs>
+  <!-- Shadow -->
   <ellipse cx="50" cy="55" rx="48" ry="5" fill="#000000" opacity="0.1"/>
-  <path d="M15 45 L85 45 L80 15 L20 15 Z" fill="url(#bucketGrad)" rx="5" filter="url(#bucketShadow)"/>
-  <rect x="20" y="15" width="60" height="8" rx="4" fill="#42a5f5"/>
+  <!-- Bucket body with border -->
+  <path d="M15 45 L85 45 L80 15 L20 15 Z" fill="url(#bucketGrad)" stroke="#0d47a1" stroke-width="2.5" filter="url(#bucketShadow)"/>
+  <!-- Top rim -->
+  <rect x="20" y="15" width="60" height="8" rx="4" fill="#42a5f5" stroke="#1976d2" stroke-width="1.5"/>
+  <!-- Rim highlight -->
   <rect x="22" y="17" width="56" height="4" rx="2" fill="#ffffff" opacity="0.4"/>
 </svg>

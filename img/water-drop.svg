@@ -9,6 +9,8 @@
       <feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity="0.3"/>
     </filter>
   </defs>
-  <path d="M11 2 C6 8, 2 12, 2 18 C2 24, 6 28, 11 28 C16 28, 20 24, 20 18 C20 12, 16 8, 11 2 Z" fill="url(#cleanWater)" filter="url(#dropShadow)"/>
+  <!-- Water drop with border -->
+  <path d="M11 2 C6 8, 2 12, 2 18 C2 24, 6 28, 11 28 C16 28, 20 24, 20 18 C20 12, 16 8, 11 2 Z" fill="url(#cleanWater)" stroke="#1976d2" stroke-width="1.5" filter="url(#dropShadow)"/>
+  <!-- Highlight -->
   <ellipse cx="8" cy="12" rx="2" ry="3" fill="#ffffff" opacity="0.7"/>
 </svg>

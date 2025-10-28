@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tube Clean: Water Rescue</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -20,6 +23,12 @@
       <main>
         <div class="start-controls">
           <input type="text" id="playerName" class="input" placeholder="Enter your name" maxlength="20" />
+          <div class="difficulty">
+            <span>Difficulty:</span>
+            <label><input type="radio" name="difficulty" value="easy"> Easy</label>
+            <label><input type="radio" name="difficulty" value="normal" checked> Normal</label>
+            <label><input type="radio" name="difficulty" value="hard"> Hard</label>
+          </div>
           <button id="startBtn" class="main-button">START</button>
         </div>
       </main>
@@ -37,6 +46,7 @@
         <div class="phase-indicator">
           <span id="currentPhase">Click the dirty tub!</span>
         </div>
+        <div id="milestoneBanner" class="milestone-banner hidden" aria-live="polite"></div>
       </header>
 
       <main class="game-area">
@@ -138,8 +148,13 @@
         </div>
       </main>
 
-      <footer>
+      <footer class="game-footer">
         <button id="resetBtn" class="small-button">RESET</button>
+        <div class="charity-links">
+          <a href="https://www.charitywater.org/" target="_blank" rel="noopener noreferrer">Learn More</a>
+          <span class="separator">•</span>
+          <a href="https://www.charitywater.org/donate" target="_blank" rel="noopener noreferrer">Donate</a>
+        </div>
       </footer>
     </div>
   </div>
@@ -162,10 +177,20 @@
           <button id="shareBtn" class="secondary-button">SHARE</button>
         </div>
       </main>
-      <footer>
+      <footer class="results-footer">
         <a href="https://www.charitywater.org/" target="_blank" rel="noopener noreferrer">
           <img src="img/charity-water-logo.svg" alt="charity: water logo" class="logo" onerror="if(!this.dataset.fallback){this.dataset.fallback=1;this.src='img/cw_logo-horizontal.png';}else{this.src='img/cw_logo.png';}" />
         </a>
+        <div class="charity-footer-text">
+          <p>Every day, 700 million people don't have clean water to drink.</p>
+          <div class="charity-links">
+            <a href="https://www.charitywater.org/about" target="_blank" rel="noopener noreferrer">About charity: water</a>
+            <span class="separator">•</span>
+            <a href="https://www.charitywater.org/donate" target="_blank" rel="noopener noreferrer">Donate Now</a>
+            <span class="separator">•</span>
+            <a href="https://www.charitywater.org/projects" target="_blank" rel="noopener noreferrer">View Projects</a>
+          </div>
+        </div>
       </footer>
     </div>
   </div>

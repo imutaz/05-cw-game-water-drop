@@ -7,7 +7,8 @@ let gameState = {
   gameActive: false,
   waterLevel: 100, // Water level percentage (100% = full tube)
   isSqueezing: false,
-  playerName: ''
+  playerName: '',
+  difficulty: 'normal'
 };
 
 // DOM Elements
@@ -40,6 +41,136 @@ const elements = {
   playerNameInput: document.getElementById('playerName')
 };
 
+// Difficulty configuration
+const DIFFICULTY = {
+  easy: {
+    fallDurationMs: 2500,
+    dropsPerSqueezeMin: 2,
+    dropsPerSqueezeMax: 4,
+    interDropMs: 250,
+    minSpacing: 36,
+    buttonCooldownMs: 2200
+  },
+  normal: {
+    fallDurationMs: 1600,
+    dropsPerSqueezeMin: 3,
+    dropsPerSqueezeMax: 5,
+    interDropMs: 180,
+    minSpacing: 28,
+    buttonCooldownMs: 1800
+  },
+  hard: {
+    fallDurationMs: 950,
+    dropsPerSqueezeMin: 4,
+    dropsPerSqueezeMax: 6,
+    interDropMs: 120,
+    minSpacing: 22,
+    buttonCooldownMs: 1400
+  }
+};
+
+// --- Audio (synthesized) and Milestones ---
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playTone(freq, type = 'sine', duration = 0.12, volume = 0.12) {
+  try {
+    ensureAudio();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.value = 0;
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(volume, now + 0.01);
+    o.start(now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    o.stop(now + duration + 0.02);
+  } catch (e) {
+    // ignore audio errors in older browsers
+    console.warn('Audio error', e);
+  }
+}
+
+function playSound(name) {
+  // Ensure resumed on user gesture (call on first click will create/resume audio)
+  if (!audioCtx) ensureAudio();
+  // small mapping of sounds
+  switch (name) {
+    case 'collect':
+      // bright ding
+      playTone(880, 'sine', 0.12, 0.14);
+      setTimeout(() => playTone(1320, 'sine', 0.08, 0.08), 90);
+      break;
+    case 'dirty':
+      // low thud
+      playTone(160, 'sawtooth', 0.18, 0.16);
+      break;
+    case 'miss':
+      playTone(220, 'sine', 0.1, 0.08);
+      break;
+    case 'click':
+      playTone(1200, 'triangle', 0.06, 0.06);
+      break;
+    case 'win':
+      // small arpeggio
+      playTone(880, 'sine', 0.12, 0.12);
+      setTimeout(() => playTone(1100, 'sine', 0.12, 0.1), 90);
+      setTimeout(() => playTone(1320, 'sine', 0.12, 0.08), 180);
+      break;
+    case 'milestone':
+      playTone(660, 'sine', 0.12, 0.12);
+      setTimeout(() => playTone(880, 'sine', 0.12, 0.08), 100);
+      break;
+    default:
+      // fallback click
+      playTone(600, 'sine', 0.06, 0.06);
+  }
+}
+
+// Milestones: thresholds are purity points
+const MILESTONES = [
+  { threshold: 10, message: 'Nice start — keep going!' },
+  { threshold: 25, message: 'Good job — you\'re getting cleaner water!' },
+  { threshold: 50, message: 'Halfway there!' },
+  { threshold: 75, message: 'Almost perfect — great work!' },
+  { threshold: 90, message: 'Amazing — almost pure!' },
+  { threshold: 100, message: 'Mission accomplished! You made perfectly clean water!' }
+];
+const achievedMilestones = new Set();
+
+function showMilestone(text) {
+  const banner = document.getElementById('milestoneBanner');
+  if (!banner) return;
+  banner.textContent = text;
+  banner.classList.remove('hidden');
+  // force reflow for animation
+  void banner.offsetWidth;
+  banner.classList.add('show');
+  // play sound for milestone
+  playSound('milestone');
+  setTimeout(() => {
+    banner.classList.remove('show');
+    banner.classList.add('hidden');
+  }, 2400);
+}
+
+function checkMilestones() {
+  for (const m of MILESTONES) {
+    if (gameState.purity >= m.threshold && !achievedMilestones.has(m.threshold)) {
+      achievedMilestones.add(m.threshold);
+      showMilestone(m.message);
+    }
+  }
+}
+
 // Screen Management
 function showScreen(screenName) {
   Object.values(screens).forEach(screen => screen.classList.add('hidden'));
@@ -57,6 +188,9 @@ function showPhase(phaseName) {
 function startGame() {
   // Capture player name
   gameState.playerName = (elements.playerNameInput?.value || 'Player').trim().slice(0,20) || 'Player';
+  // Capture difficulty
+  const selected = document.querySelector('input[name="difficulty"]:checked');
+  gameState.difficulty = selected ? selected.value : 'normal';
   gameState.currentPhase = 'scoop';
   gameState.purity = 0;
   gameState.squeezeCount = 0;
@@ -123,13 +257,13 @@ function squeezeFilter() {
   gameState.waterLevel = Math.max(0, gameState.waterLevel - (100 / gameState.maxSqueezes));
   updateWaterLevel();
   
-  // Create multiple drops (3-6 drops per squeeze)
-  const numDrops = Math.floor(Math.random() * 4) + 3; // 3-6 drops
+  const cfg = DIFFICULTY[gameState.difficulty] || DIFFICULTY.normal;
+  const numDrops = Math.floor(Math.random() * (cfg.dropsPerSqueezeMax - cfg.dropsPerSqueezeMin + 1)) + cfg.dropsPerSqueezeMin;
   for (let i = 0; i < numDrops; i++) {
     setTimeout(() => {
       const isDirty = Math.random() < 0.25; // 25% chance of dirty drop
-      createDrop(isDirty, i * 100); // Stagger drops by 100ms
-    }, i * 150);
+      createDrop(isDirty);
+    }, i * cfg.interDropMs);
   }
   
   // Update progress
@@ -146,7 +280,7 @@ function squeezeFilter() {
     setTimeout(() => {
       elements.squeezeBtn.classList.remove('released');
     }, 300);
-  }, 2000); // 2 second delay for multiple drops
+  }, (DIFFICULTY[gameState.difficulty] || DIFFICULTY.normal).buttonCooldownMs);
   
   // Check if filtering is complete
   if (gameState.squeezeCount >= gameState.maxSqueezes) {
@@ -156,7 +290,8 @@ function squeezeFilter() {
   }
 }
 
-function createDrop(isDirty, delay = 0) {
+function createDrop(isDirty) {
+  const cfg = DIFFICULTY[gameState.difficulty] || DIFFICULTY.normal;
   const drop = document.createElement('img');
   drop.src = isDirty ? 'img/dirty-drop.svg' : 'img/water-drop.svg';
   drop.className = isDirty ? 'drop dirty-drop' : 'drop clean-drop';
@@ -168,7 +303,7 @@ function createDrop(isDirty, delay = 0) {
   const dropZone = document.getElementById('dropZone');
   const zoneRect = dropZone.getBoundingClientRect();
   const centerX = zoneRect.width / 2;
-  const minSpacing = 28; // px
+  const minSpacing = cfg.minSpacing; // px, difficulty-based
   const range = Math.min(zoneRect.width - 40, 200);
   let positions = (dropZone._activePositions || []).filter(p => Date.now() - p.time < 1000);
   let x;
@@ -184,12 +319,24 @@ function createDrop(isDirty, delay = 0) {
   drop.style.top = '20px'; // Start from tube spout area
   drop.style.zIndex = '15';
   drop.style.pointerEvents = 'auto';
-  drop.style.transition = 'top 1.5s ease-in';
+  drop.style.transition = `top ${cfg.fallDurationMs}ms ease-in`;
   dropZone.appendChild(drop);
   
   // Animate drop falling
   setTimeout(() => {
-  drop.style.top = '100px'; // Fall to bottom of drop zone
+    // Aim the drop to fall near the top of the bucket zone so it can be caught
+    const bucketZone = document.querySelector('.bucket-zone');
+    const bucketZoneRect = bucketZone.getBoundingClientRect();
+    const targetTop = Math.max(
+      80,
+      Math.min(
+        // Slightly above the bucket zone top to overlap for catching
+        (bucketZoneRect.top - zoneRect.top) - 12,
+        // Cap to avoid excessively large values on tiny screens
+        dropZone.clientHeight + 120
+      )
+    );
+    drop.style.top = `${targetTop}px`;
   }, 50);
   
   // Check for bucket collision during fall
@@ -197,8 +344,10 @@ function createDrop(isDirty, delay = 0) {
     if (!drop.parentNode) return;
     
     const dropRect = drop.getBoundingClientRect();
-    const bucket = document.getElementById('cleanBucket');
-    const bucketRect = bucket.getBoundingClientRect();
+  const bucket = document.getElementById('cleanBucket');
+  const bucketRect = bucket.getBoundingClientRect();
+  const bucketZone = document.querySelector('.bucket-zone');
+  const bucketZoneRect = bucketZone.getBoundingClientRect();
     
     // Check if drop overlaps with bucket
     if (dropRect.bottom >= bucketRect.top &&
@@ -210,18 +359,27 @@ function createDrop(isDirty, delay = 0) {
       if (isDirty) {
         gameState.purity = Math.max(0, gameState.purity - 8);
         createSplash(dropRect.left + 11, dropRect.top + 15);
+        playSound('dirty');
       } else {
         gameState.purity = Math.min(100, gameState.purity + 12);
         createCleanSplash(dropRect.left + 11, dropRect.top + 15);
-        
+        playSound('collect');
         // Visual feedback for catching clean drop
         bucket.style.transform += ' scale(1.1)';
         setTimeout(() => {
           bucket.style.transform = bucket.style.transform.replace(' scale(1.1)', '');
         }, 200);
       }
-      
+
       updatePurityDisplay();
+      checkMilestones();
+      drop.remove();
+      return true;
+    }
+    // Barrier: if the drop falls below the bucket zone bottom without being caught, remove it
+    if (dropRect.top > bucketZoneRect.bottom + 6) {
+      // Drop passed below bucket zone — missed
+      playSound('miss');
       drop.remove();
       return true;
     }
@@ -240,9 +398,10 @@ function createDrop(isDirty, delay = 0) {
     clearInterval(collisionInterval);
     if (drop.parentNode) {
       // Drop missed - no points gained or lost
+      playSound('miss');
       drop.remove();
     }
-  }, 2100);
+  }, cfg.fallDurationMs + 400);
 }
 
 function createSplash(x, y) {
@@ -250,15 +409,15 @@ function createSplash(x, y) {
   splash.src = 'img/dirt-splash.svg';
   splash.className = 'splash';
   splash.style.position = 'fixed';
-  splash.style.left = `${x - 20}px`;
-  splash.style.top = `${y - 20}px`;
-  splash.style.width = '40px';
-  splash.style.height = '40px';
+  splash.style.left = `${x - 30}px`; // Center the wider puddle (60px / 2)
+  splash.style.top = `${y - 15}px`; // Center the flatter puddle (30px / 2)
+  splash.style.width = '60px';
+  splash.style.height = '30px';
   splash.style.zIndex = '100';
   splash.style.pointerEvents = 'none';
   document.body.appendChild(splash);
   
-  setTimeout(() => splash.remove(), 600);
+  setTimeout(() => splash.remove(), 800);
 }
 
 function createCleanSplash(x, y) {
@@ -360,7 +519,9 @@ function resetGame() {
     maxSqueezes: 15,
     gameActive: false,
     waterLevel: 100,
-    isSqueezing: false
+    isSqueezing: false,
+    playerName: '',
+    difficulty: 'normal'
   };
   
   // Clear any remaining drops
@@ -496,6 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (elements.startBtn) {
     elements.startBtn.addEventListener('click', function() {
       console.log('Start button clicked!');
+      playSound('click');
       startGame();
     });
   } else {
@@ -503,27 +665,27 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   if (elements.resetBtn) {
-    elements.resetBtn.addEventListener('click', resetGame);
+    elements.resetBtn.addEventListener('click', function(){ playSound('click'); resetGame(); });
   }
   
   if (elements.retryBtn) {
-    elements.retryBtn.addEventListener('click', resetGame);
+    elements.retryBtn.addEventListener('click', function(){ playSound('click'); resetGame(); });
   }
   
   if (elements.shareBtn) {
-    elements.shareBtn.addEventListener('click', shareResults);
+    elements.shareBtn.addEventListener('click', function(){ playSound('click'); shareResults(); });
   }
   
   if (elements.dirtyTub) {
-    elements.dirtyTub.addEventListener('click', scoopWater);
+    elements.dirtyTub.addEventListener('click', function(){ playSound('click'); scoopWater(); });
   }
   
   if (elements.filledCup) {
-    elements.filledCup.addEventListener('click', pourWater);
+    elements.filledCup.addEventListener('click', function(){ playSound('click'); pourWater(); });
   }
   
   if (elements.squeezeBtn) {
-    elements.squeezeBtn.addEventListener('click', squeezeFilter);
+    elements.squeezeBtn.addEventListener('click', function(){ playSound('click'); squeezeFilter(); });
   }
   
   // Initialize bucket drag functionality
